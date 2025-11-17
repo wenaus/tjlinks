@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "tj-getlink",
+  "version": "1.0",
+  "description": "Copy markdown links",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "permissions": [
+    "activeTab",
+    "clipboardWrite"
+  ],
+  "commands": {
+    "open-popup": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+L",
+        "mac": "Command+Shift+L"
+      },
+      "description": "Open link copier"
+    }
+  }
+}
