@@ -89,7 +89,11 @@ function postToTjai(apiKey, truncate) {
   })
   .then(r => r.json().then(body => ({status: r.status, body})))
   .then(({status: code, body}) => {
-    if (code === 200 && body.status === 'ok') {
+    if (code === 200 && body.status === 'duplicate') {
+      showStatus('Already saved: ' + body.content, true);
+      btn.disabled = false;
+      btn.textContent = label;
+    } else if (code === 200 && body.status === 'ok') {
       showStatus('Saved: ' + body.content, false);
       setTimeout(() => window.close(), 1000);
     } else {
