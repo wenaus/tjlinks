@@ -39,6 +39,41 @@ button:hover {
   background: #0051d5;
 }
 
+#save-tjai {
+  background: #34a853;
+}
+
+#save-tjai:hover {
+  background: #2d8e47;
+}
+
+#save-tjai:disabled {
+  background: #999;
+  cursor: default;
+}
+
+#api-key-section {
+  margin-bottom: 8px;
+}
+
+#api-key {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+#save-key {
+  background: #666;
+}
+
+#save-key:hover {
+  background: #444;
+}
+
 #status {
   margin-top: 8px;
   font-size: 12px;

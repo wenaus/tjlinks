@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "tj-getlink",
-  "version": "1.0",
-  "description": "Copy markdown links",
+  "version": "1.1",
+  "description": "Copy markdown links and save bookmarks to tjai",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -13,7 +13,11 @@
   },
   "permissions": [
     "activeTab",
-    "clipboardWrite"
+    "clipboardWrite",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://etaverse.com/*"
   ],
   "commands": {
     "open-popup": {
