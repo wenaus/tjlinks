@@ -5,6 +5,7 @@ const urlInput = document.getElementById('url');
 const copyButton = document.getElementById('copy');
 const copyCleanButton = document.getElementById('copy-clean');
 const saveTjaiButton = document.getElementById('save-tjai');
+const saveTjaiCleanButton = document.getElementById('save-tjai-clean');
 const apiKeySection = document.getElementById('api-key-section');
 const apiKeyInput = document.getElementById('api-key');
 const saveKeyButton = document.getElementById('save-key');
@@ -53,7 +54,7 @@ copyCleanButton.addEventListener('click', () => {
 });
 
 // Save to tjai
-saveTjaiButton.addEventListener('click', () => {
+function initTjaiSave(truncate) {
   chrome.storage.sync.get('tjai_api_key', (data) => {
     if (!data.tjai_api_key) {
       apiKeySection.style.display = 'block';
@@ -61,13 +62,19 @@ saveTjaiButton.addEventListener('click', () => {
       showStatus('Enter API key first', true);
       return;
     }
-    postToTjai(data.tjai_api_key);
+    postToTjai(data.tjai_api_key, truncate);
   });
-});
+}
 
-function postToTjai(apiKey) {
-  saveTjaiButton.disabled = true;
-  saveTjaiButton.textContent = 'Saving...';
+saveTjaiButton.addEventListener('click', () => initTjaiSave(false));
+saveTjaiCleanButton.addEventListener('click', () => initTjaiSave(true));
+
+function postToTjai(apiKey, truncate) {
+  var btn = truncate ? saveTjaiCleanButton : saveTjaiButton;
+  var label = truncate ? 'Save to tjai without suffix' : 'Save to tjai';
+  var url = truncate ? urlInput.value.split(/[?#]/)[0] : urlInput.value;
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
 
   fetch(TJAI_API_URL, {
     method: 'POST',
@@ -77,7 +84,7 @@ function postToTjai(apiKey) {
     },
     body: JSON.stringify({
       title: cleanTitle(titleInput.value),
-      url: urlInput.value
+      url: url
     })
   })
   .then(r => r.json().then(body => ({status: r.status, body})))
@@ -87,14 +94,14 @@ function postToTjai(apiKey) {
       setTimeout(() => window.close(), 1000);
     } else {
       showStatus('Error: ' + (body.error || 'HTTP ' + code), true);
-      saveTjaiButton.disabled = false;
-      saveTjaiButton.textContent = 'Save to tjai';
+      btn.disabled = false;
+      btn.textContent = label;
     }
   })
   .catch(err => {
     showStatus('Error: ' + err.message, true);
-    saveTjaiButton.disabled = false;
-    saveTjaiButton.textContent = 'Save to tjai';
+    btn.disabled = false;
+    btn.textContent = label;
   });
 }
 

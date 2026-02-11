@@ -39,15 +39,15 @@ button:hover {
   background: #0051d5;
 }
 
-#save-tjai {
+#save-tjai, #save-tjai-clean {
   background: #34a853;
 }
 
-#save-tjai:hover {
+#save-tjai:hover, #save-tjai-clean:hover {
   background: #2d8e47;
 }
 
-#save-tjai:disabled {
+#save-tjai:disabled, #save-tjai-clean:disabled {
   background: #999;
   cursor: default;
 }
