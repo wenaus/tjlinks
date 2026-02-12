@@ -100,8 +100,10 @@ function postToTjai(apiKey, truncate) {
       btn.disabled = false;
       btn.textContent = label;
     } else if (code === 200 && body.status === 'ok') {
-      showStatus('Saved: ' + body.content, false);
-      setTimeout(() => window.close(), 1000);
+      var msg = 'Saved: ' + body.content;
+      if (body.auto_tags && body.auto_tags.length) msg += ' [' + body.auto_tags.join(', ') + ']';
+      showStatus(msg, false);
+      setTimeout(() => window.close(), 3000);
     } else {
       showStatus('Error: ' + (body.error || 'HTTP ' + code), true);
       btn.disabled = false;
