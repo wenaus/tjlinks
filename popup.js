@@ -2,6 +2,7 @@ var TJAI_API_URL = 'https://etaverse.com/tjai/api/add-bookmark';
 
 const titleInput = document.getElementById('title');
 const urlInput = document.getElementById('url');
+const textInput = document.getElementById('text');
 const copyButton = document.getElementById('copy');
 const copyCleanButton = document.getElementById('copy-clean');
 const saveTjaiButton = document.getElementById('save-tjai');
@@ -36,19 +37,23 @@ function showStatus(msg, isError) {
   statusEl.style.color = isError ? '#d00' : '#080';
 }
 
+function buildMarkdown(url) {
+  var md = `[${cleanTitle(titleInput.value)}](${url})`;
+  var text = textInput.value.trim();
+  if (text) md += '   ' + text;
+  return md;
+}
+
 // Copy with full URL
 copyButton.addEventListener('click', () => {
-  const markdown = `[${cleanTitle(titleInput.value)}](${urlInput.value})`;
-  navigator.clipboard.writeText(markdown).then(() => {
+  navigator.clipboard.writeText(buildMarkdown(urlInput.value)).then(() => {
     window.close();
   });
 });
 
 // Copy without suffix
 copyCleanButton.addEventListener('click', () => {
-  const cleanUrl = urlInput.value.split(/[?#]/)[0];
-  const markdown = `[${cleanTitle(titleInput.value)}](${cleanUrl})`;
-  navigator.clipboard.writeText(markdown).then(() => {
+  navigator.clipboard.writeText(buildMarkdown(urlInput.value.split(/[?#]/)[0])).then(() => {
     window.close();
   });
 });
@@ -84,7 +89,8 @@ function postToTjai(apiKey, truncate) {
     },
     body: JSON.stringify({
       title: cleanTitle(titleInput.value),
-      url: url
+      url: url,
+      text: textInput.value.trim()
     })
   })
   .then(r => r.json().then(body => ({status: r.status, body})))
@@ -127,10 +133,12 @@ apiKeyInput.addEventListener('keydown', (e) => {
 // Select all on focus
 titleInput.addEventListener('focus', (e) => e.target.select());
 urlInput.addEventListener('focus', (e) => e.target.select());
+textInput.addEventListener('focus', (e) => e.target.select());
 
 // Auto-resize on input
 titleInput.addEventListener('input', () => autoResize(titleInput));
 urlInput.addEventListener('input', () => autoResize(urlInput));
+textInput.addEventListener('input', () => autoResize(textInput));
 
 // Enter key to copy and close
 document.addEventListener('keydown', (e) => {
