@@ -79,6 +79,43 @@ button:hover {
   background: #444;
 }
 
+#indico-section {
+  margin-bottom: 8px;
+  padding: 10px;
+  background: #f0f7ff;
+  border: 1px solid #b3d4fc;
+  border-radius: 4px;
+}
+
+#indico-info {
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+#indico-info .indico-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+#indico-info .indico-detail {
+  color: #555;
+}
+
+#add-calendar {
+  background: #e65100;
+}
+
+#add-calendar:hover {
+  background: #bf4400;
+}
+
+#add-calendar:disabled {
+  background: #999;
+  cursor: default;
+}
+
 #status {
   margin-top: 8px;
   font-size: 12px;
