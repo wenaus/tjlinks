@@ -41,7 +41,7 @@ function extractIndicoData() {
         if (ld.location) result.locationName = ld.location.name || null;
         break;
       }
-    } catch (e) {}
+    } catch (e) { result.parseError = e.message; }
   }
 
   // Extract zoom URL from <a> hrefs
@@ -79,17 +79,36 @@ chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
 
   // Check for Indico event page
   if (/\/event\/\d+/.test(tab.url)) {
+    showStatus('Indico page detected, extracting...', false);
     chrome.scripting.executeScript({
       target: {tabId: tab.id},
       func: extractIndicoData
     }, (results) => {
       if (chrome.runtime.lastError) {
-        console.error('Indico extraction error:', chrome.runtime.lastError.message);
+        showStatus('Indico extraction failed: ' + chrome.runtime.lastError.message, true);
         return;
       }
-      if (!results || !results[0] || !results[0].result) return;
+      if (!results || !results[0]) {
+        showStatus('Indico: no script results returned', true);
+        return;
+      }
       var data = results[0].result;
-      if (!data.name || !data.startDate) return;
+      if (!data) {
+        showStatus('Indico: content script returned null', true);
+        return;
+      }
+      if (data.parseError) {
+        showStatus('Indico: JSON-LD parse error: ' + data.parseError, true);
+        return;
+      }
+      if (!data.name) {
+        showStatus('Indico: no Event JSON-LD found on page', true);
+        return;
+      }
+      if (!data.startDate) {
+        showStatus('Indico: event has no startDate', true);
+        return;
+      }
 
       indicoEventData = data;
       indicoEventData.indicoUrl = tab.url.split(/[?#]/)[0];
@@ -102,6 +121,7 @@ chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
 
       indicoInfo.innerHTML = html;
       indicoSection.style.display = 'block';
+      showStatus('', false);
     });
   }
 });
