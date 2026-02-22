@@ -256,9 +256,14 @@ function postToTjai(apiKey, truncate) {
   .then(r => r.json().then(body => ({status: r.status, body})))
   .then(({status: code, body}) => {
     if (code === 200 && body.status === 'duplicate') {
-      showStatus('Already saved: ' + body.content, true);
-      btn.disabled = false;
-      btn.textContent = label;
+      if (body.updated) {
+        showStatus('Updated: ' + body.content, false);
+        setTimeout(() => window.close(), 3000);
+      } else {
+        showStatus('Already saved: ' + body.content, true);
+        btn.disabled = false;
+        btn.textContent = label;
+      }
     } else if (code === 200 && body.status === 'ok') {
       var msg = 'Saved: ' + body.content;
       if (body.auto_tags && body.auto_tags.length) msg += ' [' + body.auto_tags.join(', ') + ']';
