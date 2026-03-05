@@ -1,5 +1,28 @@
 var TJAI_API_URL = 'https://etaverse.com/tjai/api/add-bookmark';
 var TJAI_JOURNAL_URL = 'https://etaverse.com/tjai/api/add-journal';
+var TJAI_HEALTH_URL = 'https://etaverse.com/tjai/api/health';
+
+// App timezone (IANA name) fetched from server; null until loaded
+var appTimezone = null;
+
+// Fetch app timezone from server on startup
+fetch(TJAI_HEALTH_URL)
+  .then(r => r.json())
+  .then(data => {
+    if (data.timezone) {
+      appTimezone = data.timezone;
+      // Re-render Indico display if already extracted
+      if (indicoEventData && indicoEventData.startDate) {
+        var dateEl = indicoInfo.querySelector('.indico-detail');
+        if (dateEl) {
+          var text = formatEventDate(indicoEventData.startDate);
+          if (indicoEventData.locationName) text += ' \u2014 ' + indicoEventData.locationName;
+          dateEl.innerHTML = text;
+        }
+      }
+    }
+  })
+  .catch(err => { console.error('Failed to fetch app timezone:', err.message); });
 
 const titleInput = document.getElementById('title');
 const urlInput = document.getElementById('url');
@@ -61,12 +84,15 @@ function extractIndicoData() {
   return result;
 }
 
-// Format ISO date for display in user's local timezone
+// Format ISO date for display in app timezone (from server), fallback to browser local
 function formatEventDate(isoStr) {
   var d = new Date(isoStr);
-  return d.toLocaleDateString(undefined, {
+  var opts = appTimezone ? {timeZone: appTimezone} : {};
+  return d.toLocaleDateString('en-US', Object.assign({
     weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
-  }) + ' ' + d.toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit'});
+  }, opts)) + ' ' + d.toLocaleTimeString('en-US', Object.assign({
+    hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
+  }, opts));
 }
 
 // Get current tab info
