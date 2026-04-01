@@ -57,6 +57,20 @@ button:hover {
   cursor: default;
 }
 
+#save-readme, #save-readme-clean {
+  background: #ffb74d;
+  color: #1a1a1a;
+}
+
+#save-readme:hover, #save-readme-clean:hover {
+  background: #ffa726;
+}
+
+#save-readme:disabled, #save-readme-clean:disabled {
+  background: #999;
+  cursor: default;
+}
+
 #api-key-section {
   margin-bottom: 8px;
 }

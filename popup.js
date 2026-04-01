@@ -31,6 +31,8 @@ const copyButton = document.getElementById('copy');
 const copyCleanButton = document.getElementById('copy-clean');
 const saveTjaiButton = document.getElementById('save-tjai');
 const saveTjaiCleanButton = document.getElementById('save-tjai-clean');
+const saveReadmeButton = document.getElementById('save-readme');
+const saveReadmeCleanButton = document.getElementById('save-readme-clean');
 const apiKeySection = document.getElementById('api-key-section');
 const apiKeyInput = document.getElementById('api-key');
 const saveKeyButton = document.getElementById('save-key');
@@ -245,7 +247,7 @@ copyCleanButton.addEventListener('click', () => {
 });
 
 // Save to tjai
-function initTjaiSave(truncate) {
+function initTjaiSave(truncate, readme) {
   chrome.storage.sync.get('tjai_api_key', (data) => {
     if (!data.tjai_api_key) {
       apiKeySection.style.display = 'block';
@@ -253,19 +255,30 @@ function initTjaiSave(truncate) {
       showStatus('Enter API key first', true);
       return;
     }
-    postToTjai(data.tjai_api_key, truncate);
+    postToTjai(data.tjai_api_key, truncate, readme);
   });
 }
 
-saveTjaiButton.addEventListener('click', () => initTjaiSave(false));
-saveTjaiCleanButton.addEventListener('click', () => initTjaiSave(true));
+saveTjaiButton.addEventListener('click', () => initTjaiSave(false, false));
+saveTjaiCleanButton.addEventListener('click', () => initTjaiSave(true, false));
+saveReadmeButton.addEventListener('click', () => initTjaiSave(false, true));
+saveReadmeCleanButton.addEventListener('click', () => initTjaiSave(true, true));
 
-function postToTjai(apiKey, truncate) {
-  var btn = truncate ? saveTjaiCleanButton : saveTjaiButton;
-  var label = truncate ? 'Save to tjai without suffix' : 'Save to tjai';
+function postToTjai(apiKey, truncate, readme) {
+  var btn = readme
+    ? (truncate ? saveReadmeCleanButton : saveReadmeButton)
+    : (truncate ? saveTjaiCleanButton : saveTjaiButton);
+  var label = btn.textContent;
   var url = truncate ? urlInput.value.split(/[?#]/)[0] : urlInput.value;
   btn.disabled = true;
   btn.textContent = 'Saving...';
+
+  var payload = {
+    title: cleanTitle(titleInput.value),
+    url: url,
+    text: textInput.value.trim()
+  };
+  if (readme) payload.readme = true;
 
   fetch(TJAI_API_URL, {
     method: 'POST',
@@ -273,11 +286,7 @@ function postToTjai(apiKey, truncate) {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + apiKey
     },
-    body: JSON.stringify({
-      title: cleanTitle(titleInput.value),
-      url: url,
-      text: textInput.value.trim()
-    })
+    body: JSON.stringify(payload)
   })
   .then(r => r.json().then(body => ({status: r.status, body})))
   .then(({status: code, body}) => {
@@ -315,7 +324,7 @@ saveKeyButton.addEventListener('click', () => {
   chrome.storage.sync.set({tjai_api_key: key}, () => {
     apiKeySection.style.display = 'none';
     showStatus('Key saved', false);
-    postToTjai(key);
+    postToTjai(key, false, false);
   });
 });
 
