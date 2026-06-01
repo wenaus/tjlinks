@@ -11,12 +11,12 @@ fetch(TJAI_HEALTH_URL)
   .then(data => {
     if (data.timezone) {
       appTimezone = data.timezone;
-      // Re-render Indico display if already extracted
-      if (indicoEventData && indicoEventData.startDate) {
-        var dateEl = indicoInfo.querySelector('.indico-detail');
+      // Re-render event display if already extracted
+      if (eventData && eventData.startDate) {
+        var dateEl = eventInfo.querySelector('.event-detail');
         if (dateEl) {
-          var text = formatEventDate(indicoEventData.startDate);
-          if (indicoEventData.locationName) text += ' \u2014 ' + indicoEventData.locationName;
+          var text = formatEventDate(eventData.startDate);
+          if (eventData.locationName) text += ' — ' + eventData.locationName;
           dateEl.innerHTML = text;
         }
       }
@@ -44,17 +44,19 @@ function autoResize(textarea) {
   textarea.style.height = textarea.scrollHeight + 'px';
 }
 
-// Indico elements
-const indicoSection = document.getElementById('indico-section');
-const indicoInfo = document.getElementById('indico-info');
+// Event elements
+const eventSection = document.getElementById('event-section');
+const eventInfo = document.getElementById('event-info');
 const addCalendarButton = document.getElementById('add-calendar');
-var indicoEventData = null;
+var eventData = null;
 
-// Extract event data from Indico page (runs as content script)
-function extractIndicoData() {
+// Extract schema.org Event data from the page (runs as content script).
+// Generic: any page advertising an Event in JSON-LD (Indico, Squarespace
+// calendars, Eventbrite, etc.) is matched the same way.
+function extractEventData() {
   var result = {name: null, startDate: null, endDate: null, locationName: null, zoomUrl: null};
 
-  // Parse JSON-LD
+  // Parse JSON-LD, looking for a schema.org Event
   var scripts = document.querySelectorAll('script[type="application/ld+json"]');
   for (var i = 0; i < scripts.length; i++) {
     try {
@@ -66,7 +68,7 @@ function extractIndicoData() {
         if (ld.location) result.locationName = ld.location.name || null;
         break;
       }
-    } catch (e) { result.parseError = e.message; }
+    } catch (e) { /* ignore non-JSON / malformed blocks while probing */ }
   }
 
   // Extract zoom URL from <a> hrefs
@@ -105,53 +107,30 @@ chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
   autoResize(titleInput);
   autoResize(urlInput);
 
-  // Check for Indico event page
-  if (/\/event\/\d+/.test(tab.url)) {
-    showStatus('Indico page detected, extracting...', false);
-    chrome.scripting.executeScript({
-      target: {tabId: tab.id},
-      func: extractIndicoData
-    }, (results) => {
-      if (chrome.runtime.lastError) {
-        showStatus('Indico extraction failed: ' + chrome.runtime.lastError.message, true);
-        return;
-      }
-      if (!results || !results[0]) {
-        showStatus('Indico: no script results returned', true);
-        return;
-      }
-      var data = results[0].result;
-      if (!data) {
-        showStatus('Indico: content script returned null', true);
-        return;
-      }
-      if (data.parseError) {
-        showStatus('Indico: JSON-LD parse error: ' + data.parseError, true);
-        return;
-      }
-      if (!data.name) {
-        showStatus('Indico: no Event JSON-LD found on page', true);
-        return;
-      }
-      if (!data.startDate) {
-        showStatus('Indico: event has no startDate', true);
-        return;
-      }
+  // Probe any page for schema.org Event markup. Stays silent unless a
+  // usable Event (name + startDate) is found — no URL gate.
+  chrome.scripting.executeScript({
+    target: {tabId: tab.id},
+    func: extractEventData
+  }, (results) => {
+    // Silent on pages we can't script (chrome://, store pages, etc.)
+    if (chrome.runtime.lastError) return;
+    if (!results || !results[0] || !results[0].result) return;
+    var data = results[0].result;
+    if (!data.name || !data.startDate) return;
 
-      indicoEventData = data;
-      indicoEventData.indicoUrl = tab.url.split(/[?#]/)[0];
+    eventData = data;
+    eventData.eventUrl = tab.url.split(/[?#]/)[0];
 
-      var html = '<div class="indico-title">' + escapeHtml(data.name) + '</div>';
-      html += '<div class="indico-detail">' + formatEventDate(data.startDate);
-      if (data.locationName) html += ' &mdash; ' + escapeHtml(data.locationName);
-      html += '</div>';
-      if (data.zoomUrl) html += '<div class="indico-detail">zoom link found</div>';
+    var html = '<div class="event-title">' + escapeHtml(data.name) + '</div>';
+    html += '<div class="event-detail">' + formatEventDate(data.startDate);
+    if (data.locationName) html += ' &mdash; ' + escapeHtml(data.locationName);
+    html += '</div>';
+    if (data.zoomUrl) html += '<div class="event-detail">zoom link found</div>';
 
-      indicoInfo.innerHTML = html;
-      indicoSection.style.display = 'block';
-      showStatus('', false);
-    });
-  }
+    eventInfo.innerHTML = html;
+    eventSection.style.display = 'block';
+  });
 });
 
 // Clean title - remove newlines and extra whitespace
@@ -170,9 +149,9 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// Save Indico event to tjai calendar
+// Save detected event to tjai calendar
 addCalendarButton.addEventListener('click', () => {
-  if (!indicoEventData) return;
+  if (!eventData) return;
   chrome.storage.sync.get('tjai_api_key', (data) => {
     if (!data.tjai_api_key) {
       apiKeySection.style.display = 'block';
@@ -180,24 +159,24 @@ addCalendarButton.addEventListener('click', () => {
       showStatus('Enter API key first', true);
       return;
     }
-    postIndicoEvent(data.tjai_api_key);
+    postEvent(data.tjai_api_key);
   });
 });
 
-function postIndicoEvent(apiKey) {
+function postEvent(apiKey) {
   addCalendarButton.disabled = true;
   addCalendarButton.textContent = 'Saving...';
 
-  var eventTimestamp = new Date(indicoEventData.startDate).getTime() / 1000;
+  var eventTimestamp = new Date(eventData.startDate).getTime() / 1000;
 
   var body = {
-    title: indicoEventData.name,
+    title: eventData.name,
     event_timestamp: eventTimestamp,
-    indico_url: indicoEventData.indicoUrl,
-    source: 'indico'
+    event_url: eventData.eventUrl,
+    source: 'web'
   };
-  if (indicoEventData.zoomUrl) body.zoom_url = indicoEventData.zoomUrl;
-  if (indicoEventData.locationName) body.location = indicoEventData.locationName;
+  if (eventData.zoomUrl) body.zoom_url = eventData.zoomUrl;
+  if (eventData.locationName) body.location = eventData.locationName;
 
   fetch(TJAI_JOURNAL_URL, {
     method: 'POST',

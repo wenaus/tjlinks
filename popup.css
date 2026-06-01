@@ -93,7 +93,7 @@ button:hover {
   background: #444;
 }
 
-#indico-section {
+#event-section {
   margin-bottom: 8px;
   padding: 10px;
   background: #f0f7ff;
@@ -101,19 +101,19 @@ button:hover {
   border-radius: 4px;
 }
 
-#indico-info {
+#event-info {
   font-size: 13px;
   line-height: 1.5;
   margin-bottom: 8px;
   color: #333;
 }
 
-#indico-info .indico-title {
+#event-info .event-title {
   font-weight: 600;
   font-size: 14px;
 }
 
-#indico-info .indico-detail {
+#event-info .event-detail {
   color: #555;
 }
 
