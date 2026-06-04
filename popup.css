@@ -71,6 +71,19 @@ button:hover {
   cursor: default;
 }
 
+#curate-picks, #curate-picks-dl {
+  background: #6a4cff;
+}
+
+#curate-picks:hover, #curate-picks-dl:hover {
+  background: #5639d6;
+}
+
+#curate-picks:disabled, #curate-picks-dl:disabled {
+  background: #999;
+  cursor: default;
+}
+
 #api-key-section {
   margin-bottom: 8px;
 }
@@ -134,5 +147,5 @@ button:hover {
   margin-top: 8px;
   font-size: 12px;
   color: #666;
-  height: 16px;
+  min-height: 16px;
 }

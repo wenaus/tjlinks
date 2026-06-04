@@ -1,6 +1,7 @@
 var TJAI_API_URL = 'https://etaverse.com/tjai/api/add-bookmark';
 var TJAI_JOURNAL_URL = 'https://etaverse.com/tjai/api/add-journal';
 var TJAI_HEALTH_URL = 'https://etaverse.com/tjai/api/health';
+var TJAI_CURATE_URL = 'https://etaverse.com/tjai/api/picks/curate-page';
 
 // App timezone (IANA name) fetched from server; null until loaded
 var appTimezone = null;
@@ -33,6 +34,8 @@ const saveTjaiButton = document.getElementById('save-tjai');
 const saveTjaiCleanButton = document.getElementById('save-tjai-clean');
 const saveReadmeButton = document.getElementById('save-readme');
 const saveReadmeCleanButton = document.getElementById('save-readme-clean');
+const curateButton = document.getElementById('curate-picks');
+const curateDlButton = document.getElementById('curate-picks-dl');
 const apiKeySection = document.getElementById('api-key-section');
 const apiKeyInput = document.getElementById('api-key');
 const saveKeyButton = document.getElementById('save-key');
@@ -295,6 +298,148 @@ function postToTjai(apiKey, truncate, readme) {
     btn.textContent = label;
   });
 }
+
+// ---- Curate picks from the current page -------------------------------------
+// The trojan: this runs inside the user's authenticated session, so it can read
+// the page and (download variant) fetch the page's same-origin file attachments
+// with the session cookie. The server is never authenticated to the source site.
+
+var WARN_PDF_COUNT = 12;  // warn/approve before pulling more than this many decks
+
+// Injected into the page: returns its text + same-origin PDF links.
+function extractPicksContent() {
+  var MAX_TEXT = 200000;
+  var text = (document.body ? document.body.innerText : '') || '';
+  if (text.length > MAX_TEXT) text = text.slice(0, MAX_TEXT);
+  var origin = location.origin, seen = {}, pdfUrls = [];
+  var anchors = document.querySelectorAll('a[href]');
+  for (var i = 0; i < anchors.length; i++) {
+    try {
+      var u = new URL(anchors[i].href, location.href);
+      if (u.origin !== origin) continue;          // same-origin only (auth rides along)
+      if (!/\.pdf$/i.test(u.pathname)) continue;
+      var clean = u.origin + u.pathname + u.search;
+      if (!seen[clean]) { seen[clean] = true; pdfUrls.push(clean); }
+    } catch (e) { /* skip bad href */ }
+  }
+  return {title: document.title || '', url: location.href, text: text, pdfUrls: pdfUrls};
+}
+
+// Injected into the page: fetch each same-origin PDF (authenticated) -> base64.
+async function fetchPdfsInPage(urls) {
+  function bufToB64(buf) {
+    var bytes = new Uint8Array(buf), chunk = 0x8000, bin = '';
+    for (var i = 0; i < bytes.length; i += chunk) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(bin);
+  }
+  var out = [];
+  for (var i = 0; i < urls.length; i++) {
+    try {
+      var r = await fetch(urls[i], {credentials: 'same-origin'});
+      if (!r.ok) continue;
+      var buf = await r.arrayBuffer();
+      var name = decodeURIComponent((new URL(urls[i]).pathname.split('/').pop()) || ('deck-' + i + '.pdf'));
+      out.push({name: name, b64: bufToB64(buf)});
+    } catch (e) { /* skip failed fetch, keep going */ }
+  }
+  return out;
+}
+
+function b64ToBlob(b64, type) {
+  var bin = atob(b64), arr = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], {type: type});
+}
+
+function curatePicks(downloadMode) {
+  chrome.storage.sync.get('tjai_api_key', (data) => {
+    if (!data.tjai_api_key) {
+      apiKeySection.style.display = 'block';
+      apiKeyInput.focus();
+      showStatus('Enter API key first', true);
+      return;
+    }
+    runCurate(data.tjai_api_key, downloadMode);
+  });
+}
+
+function runCurate(apiKey, downloadMode) {
+  var btn = downloadMode ? curateDlButton : curateButton;
+  var label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Reading page...';
+  chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+    var tab = tabs[0];
+    chrome.scripting.executeScript({target: {tabId: tab.id}, func: extractPicksContent}, (results) => {
+      if (chrome.runtime.lastError || !results || !results[0]) {
+        showStatus('Cannot read this page: ' + (chrome.runtime.lastError ? chrome.runtime.lastError.message : 'no result'), true);
+        btn.disabled = false; btn.textContent = label; return;
+      }
+      var page = results[0].result;
+      if (!downloadMode) { postCurate(apiKey, page, [], btn, label); return; }
+
+      var n = page.pdfUrls.length;
+      if (n === 0) {
+        showStatus('No same-origin PDFs found on this page', true);
+        btn.disabled = false; btn.textContent = label; return;
+      }
+      if (n > WARN_PDF_COUNT && !confirm('This page links ' + n + ' PDFs. Download and curate all ' + n + '?')) {
+        btn.disabled = false; btn.textContent = label; return;
+      }
+      btn.textContent = 'Fetching ' + n + ' decks...';
+      chrome.scripting.executeScript(
+        {target: {tabId: tab.id}, func: fetchPdfsInPage, args: [page.pdfUrls]},
+        (pres) => {
+          if (chrome.runtime.lastError || !pres || !pres[0]) {
+            showStatus('PDF fetch failed: ' + (chrome.runtime.lastError ? chrome.runtime.lastError.message : 'no result'), true);
+            btn.disabled = false; btn.textContent = label; return;
+          }
+          postCurate(apiKey, page, pres[0].result || [], btn, label);
+        });
+    });
+  });
+}
+
+function postCurate(apiKey, page, pdfs, btn, label) {
+  btn.textContent = pdfs.length ? ('Uploading ' + pdfs.length + ' decks...') : 'Curating...';
+  var fd = new FormData();
+  fd.append('url', page.url);
+  fd.append('title', page.title);
+  fd.append('source', page.title);
+  fd.append('mode', pdfs.length ? 'download' : 'page');
+  fd.append('page_text', page.text || '');
+  for (var i = 0; i < pdfs.length; i++) {
+    fd.append('pdfs', b64ToBlob(pdfs[i].b64, 'application/pdf'), pdfs[i].name);
+  }
+  fetch(TJAI_CURATE_URL, {
+    method: 'POST',
+    headers: {'Authorization': 'Bearer ' + apiKey},  // no Content-Type: browser sets the multipart boundary
+    body: fd
+  })
+  .then(r => r.json().then(body => ({status: r.status, body})))
+  .then(({status: code, body}) => {
+    if (code === 200 && body.status === 'queued') {
+      var msg = body.pdfs_saved
+        ? ('Queued ' + body.pdfs_saved + ' decks — picks will appear at /tjai/picks/')
+        : 'Queued — picks will appear at /tjai/picks/';
+      if (body.pdfs_truncated) msg += ' (capped)';
+      showStatus(msg, false);
+      setTimeout(() => window.close(), 4000);
+    } else {
+      showStatus('Error: ' + (body.error || 'HTTP ' + code), true);
+      btn.disabled = false; btn.textContent = label;
+    }
+  })
+  .catch(err => {
+    showStatus('Error: ' + err.message, true);
+    btn.disabled = false; btn.textContent = label;
+  });
+}
+
+curateButton.addEventListener('click', () => curatePicks(false));
+curateDlButton.addEventListener('click', () => curatePicks(true));
 
 // Save API key
 saveKeyButton.addEventListener('click', () => {
