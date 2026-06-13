@@ -142,7 +142,16 @@ function cleanTitle(title) {
 }
 
 function showStatus(msg, isError) {
-  statusEl.textContent = msg;
+  // Render markdown links (e.g. the "Saved: [title](url)" confirmation) as
+  // real links. Escape the whole message first, then linkify [text](http(s)://url).
+  var esc = escapeHtml(msg);
+  statusEl.innerHTML = esc.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    function (_m, text, url) {
+      return '<a href="' + url.replace(/"/g, '%22') +
+             '" target="_blank" rel="noopener" style="color:#06c">' + text + '</a>';
+    }
+  );
   statusEl.style.color = isError ? '#d00' : '#080';
 }
 
