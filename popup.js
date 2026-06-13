@@ -283,15 +283,15 @@ function postToTjai(apiKey, truncate, readme) {
   .then(({status: code, body}) => {
     if (code === 200 && body.status === 'duplicate') {
       if (body.updated) {
-        showStatus('Updated: ' + body.content, false);
+        showStatus('Updated: ' + (body.entry_link || body.content), false);
         setTimeout(() => window.close(), 3000);
       } else {
-        showStatus('Already saved: ' + body.content, true);
+        showStatus('Already saved: ' + (body.entry_link || body.content), true);
         btn.disabled = false;
         btn.textContent = label;
       }
     } else if (code === 200 && body.status === 'ok') {
-      var msg = 'Saved: ' + body.content;
+      var msg = 'Saved: ' + (body.entry_link || body.content);
       if (body.auto_tags && body.auto_tags.length) msg += ' [' + body.auto_tags.join(', ') + ']';
       showStatus(msg, false);
       setTimeout(() => window.close(), 3000);
