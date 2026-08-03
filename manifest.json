@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "tj-getlink",
-  "version": "1.4",
+  "version": "1.5",
   "description": "Copy markdown links, save bookmarks, add detected events, and curate picks from the current page to tjai",
   "action": {
     "default_popup": "popup.html",

@@ -7,6 +7,7 @@ Chrome extension for quickly copying markdown-formatted links with customizable 
 - **Quick markdown link copying**: Instantly copy `[title](url)` to clipboard
 - **Editable fields**: Modify title and URL before copying
 - **Strip suffix option**: Remove query parameters (`?...`) and anchors (`#...`) with one click
+- **Pin controls**: Add `:pin` during capture, with an optional top-group placement
 - **Auto-expanding fields**: Title and URL fields expand to show full content
 - **Clean titles**: Automatically removes line breaks and extra whitespace from titles
 - **Keyboard shortcut**: Cmd+Shift+L (Mac) / Ctrl+Shift+L (Windows/Linux)
@@ -25,7 +26,8 @@ Chrome extension for quickly copying markdown-formatted links with customizable 
 - Click the TJ icon in your toolbar or press Cmd+Shift+L
 - Edit title/URL if needed
 - Click "Copy" to copy with full URL
-- Click "Copy without suffix" to strip parameters and anchors
+- Use the right-hand "without suffix" button beside an action to strip parameters and anchors
+- Select "pin" to include `:pin`; select "top" to include `:pin` and add a saved entry to the ordered top pin group
 - Press Enter for quick copy (uses full URL)
 
 ## Development

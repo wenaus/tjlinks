@@ -28,6 +28,8 @@ fetch(TJAI_HEALTH_URL)
 const titleInput = document.getElementById('title');
 const urlInput = document.getElementById('url');
 const textInput = document.getElementById('text');
+const pinCheckbox = document.getElementById('pin');
+const topCheckbox = document.getElementById('top');
 const copyButton = document.getElementById('copy');
 const copyCleanButton = document.getElementById('copy-clean');
 const saveTjaiButton = document.getElementById('save-tjai');
@@ -216,12 +218,28 @@ function postEvent(apiKey) {
   });
 }
 
+function captureText() {
+  var text = textInput.value.trim();
+  if (pinCheckbox.checked && !/(^|\s):pin(?=\s|$)/.test(text)) {
+    text += (text ? ' ' : '') + ':pin';
+  }
+  return text;
+}
+
 function buildMarkdown(url) {
   var md = `[${cleanTitle(titleInput.value)}](${url})`;
-  var text = textInput.value.trim();
+  var text = captureText();
   if (text) md += '   ' + text;
   return md;
 }
+
+topCheckbox.addEventListener('change', () => {
+  if (topCheckbox.checked) pinCheckbox.checked = true;
+});
+
+pinCheckbox.addEventListener('change', () => {
+  if (!pinCheckbox.checked) topCheckbox.checked = false;
+});
 
 // Copy with full URL
 copyButton.addEventListener('click', () => {
@@ -267,7 +285,9 @@ function postToTjai(apiKey, truncate, readme) {
   var payload = {
     title: cleanTitle(titleInput.value),
     url: url,
-    text: textInput.value.trim()
+    text: captureText(),
+    pin: pinCheckbox.checked,
+    top: topCheckbox.checked
   };
   if (readme) payload.readme = true;
 

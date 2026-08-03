@@ -7,12 +7,22 @@
   <textarea id="title" placeholder="Title" rows="1"></textarea>
   <textarea id="url" placeholder="URL" rows="1"></textarea>
   <textarea id="text" placeholder="Tags, notes..." rows="1"></textarea>
-  <button id="copy">Copy</button>
-  <button id="copy-clean">Copy without suffix</button>
-  <button id="save-tjai">Save to tjai</button>
-  <button id="save-tjai-clean">Save to tjai without suffix</button>
-  <button id="save-readme">Add to tjai ReadMe</button>
-  <button id="save-readme-clean">Add to tjai ReadMe without suffix</button>
+  <div class="capture-options">
+    <label><input id="pin" type="checkbox"> pin</label>
+    <label><input id="top" type="checkbox"> top</label>
+  </div>
+  <div class="button-pair">
+    <button id="copy">Copy</button>
+    <button id="copy-clean" class="without-suffix">without suffix</button>
+  </div>
+  <div class="button-pair">
+    <button id="save-tjai">Save to tjai</button>
+    <button id="save-tjai-clean" class="without-suffix">without suffix</button>
+  </div>
+  <div class="button-pair">
+    <button id="save-readme">Add to tjai ReadMe</button>
+    <button id="save-readme-clean" class="without-suffix">without suffix</button>
+  </div>
   <button id="curate-picks">Curate picks from page</button>
   <button id="curate-picks-dl">Curate picks + download slides</button>
   <div id="event-section" style="display:none;">
