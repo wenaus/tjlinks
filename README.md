@@ -18,8 +18,11 @@ Chrome extension for quickly copying markdown-formatted links with customizable 
 1. Open Chrome and navigate to `chrome://extensions/`
 2. Enable "Developer mode" (toggle in top right)
 3. Click "Load unpacked"
-4. Select the `tj-getlink` directory
+4. Select the `tjlinks` checkout (`~/github/tjlinks`)
 5. Pin the extension to your toolbar (puzzle piece icon → pin tj-getlink)
+
+Existing installations using `tjrepo/tj-getlink` continue through its
+compatibility symlink to the standalone checkout.
 
 ## Usage
 
