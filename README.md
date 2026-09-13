@@ -41,3 +41,10 @@ Chrome extension for quickly copying markdown-formatted links with customizable 
 
 - Chrome browser
 - Python 3 + Pillow for icon generation (optional)
+
+## License and history
+
+Developed by Torre Wenaus with AI assistance. The code is licensed under
+[Apache 2.0](LICENSE). The standalone `wenaus/tjlinks` repository retains the
+extension's relevant history from `tjrepo/tj-getlink`, including authorship,
+dates and commit messages; extraction changes commit hashes.
